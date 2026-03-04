@@ -15,7 +15,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; background: #0f0f0f; color: #f0ebe0; font-family: 'DM Mono', 'Courier New', monospace; }
     body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: #1a1a1a; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
@@ -25,30 +24,25 @@
     .month-label { font-size: 10px; letter-spacing: 4px; color: #666; margin-bottom: 4px; text-transform: uppercase; }
     .title { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -1px; margin-bottom: 28px; }
 
-    /* Master bar */
     .master-bar-row { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 8px; }
     .bar-track { height: 6px; background: #1e1e1e; border-radius: 3px; overflow: hidden; margin-bottom: 20px; }
     .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 
-    /* Mini bars */
     .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-bottom: 28px; }
     .mini-item { cursor: pointer; }
     .mini-label-row { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 5px; }
     .mini-track { height: 3px; background: #1e1e1e; border-radius: 2px; overflow: hidden; }
     .mini-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
 
-    /* Tabs */
     .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
     .tab-btn { flex: 1; padding: 10px 6px; border-radius: 8px; font-size: 18px; border: 1px solid #222; background: #1a1a1a; color: #555; cursor: pointer; transition: all 0.2s ease; }
     .tab-btn.active { color: #0f0f0f; }
     .tab-btn:hover { transform: translateY(-2px); }
 
-    /* Category header */
     .cat-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
     .cat-name { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700; }
     .cat-remaining { font-size: 11px; color: #555; }
 
-    /* Input row */
     .input-row { display: flex; gap: 8px; margin-bottom: 24px; }
     .amount-wrap { display: flex; align-items: center; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 0 14px; width: 110px; }
     .dollar { color: #555; font-size: 13px; margin-right: 4px; }
@@ -58,7 +52,6 @@
     .add-btn:hover { transform: scale(1.04); }
     .add-btn:active { transform: scale(0.96); }
 
-    /* Entries */
     .empty { text-align: center; color: #333; font-size: 12px; padding: 40px 0; letter-spacing: 2px; }
     .entry { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid #1a1a1a; animation: slideIn 0.25s ease forwards; }
     .entry-note { font-size: 13px; color: #f0ebe0; margin-bottom: 3px; }
@@ -70,11 +63,7 @@
     .show-more { background: transparent; border: none; color: #555; font-size: 11px; letter-spacing: 2px; padding: 16px 0; width: 100%; text-align: center; text-transform: uppercase; cursor: pointer; }
     .show-more:hover { color: #888; }
 
-    .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
-    .num-btn { background: #1a1a1a; border: 1px solid #222; border-radius: 8px; color: #f0ebe0; font-size: 18px; font-family: 'DM Mono', monospace; padding: 14px; cursor: pointer; transition: all 0.1s; }
-    .num-btn:active { transform: scale(0.94); background: #2a2a2a; }
-    .num-back { color: #888; }
-    .num-confirm { font-size: 16px; }
+    @keyframes slideIn {
       from { opacity: 0; transform: translateY(-6px); }
       to { opacity: 1; transform: translateY(0); }
     }
@@ -82,45 +71,25 @@
 </head>
 <body>
 <div id="app"></div>
-
 <script>
   const BUDGETS = {
-    food:   { label: "Groceries",   limit: 250, color: "#e8c547", emoji: "🛒" },
-    eating: { label: "Eating Out",  limit: 200, color: "#e87d47", emoji: "🌮" },
-    fun:    { label: "Fun & Misc",  limit: 220, color: "#a78bfa", emoji: "✨" },
-    gas:    { label: "Gas",         limit: 100, color: "#47c9e8", emoji: "⛽" },
+    food:   { label: "Groceries",  limit: 250, color: "#e8c547", emoji: "🛒" },
+    eating: { label: "Eating Out", limit: 200, color: "#e87d47", emoji: "🌮" },
+    fun:    { label: "Fun & Misc", limit: 220, color: "#a78bfa", emoji: "✨" },
+    gas:    { label: "Gas",        limit: 100, color: "#47c9e8", emoji: "⛽" },
   };
-
   const KEYS = Object.keys(BUDGETS);
 
-  function getMonthKey() {
-    const d = new Date();
-    return `budget_${d.getFullYear()}_${d.getMonth()}`;
-  }
+  function getMonthKey() { const d = new Date(); return `budget_${d.getFullYear()}_${d.getMonth()}`; }
+  function getMonthName() { return new Date().toLocaleString("default", { month: "long", year: "numeric" }); }
+  function formatDate(iso) { return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+  function loadEntries() { try { return JSON.parse(localStorage.getItem(getMonthKey())) || []; } catch { return []; } }
+  function saveEntries(e) { try { localStorage.setItem(getMonthKey(), JSON.stringify(e)); } catch {} }
 
-  function getMonthName() {
-    return new Date().toLocaleString("default", { month: "long", year: "numeric" });
-  }
-
-  function formatDate(iso) {
-    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
-
-  function loadEntries() {
-    try { return JSON.parse(localStorage.getItem(getMonthKey())) || []; }
-    catch { return []; }
-  }
-
-  function saveEntries(entries) {
-    try { localStorage.setItem(getMonthKey(), JSON.stringify(entries)); }
-    catch {}
-  }
-
-  // State
   let entries = loadEntries();
   let activeTab = "eating";
   let showAll = false;
-  let rawDigits = ""; // calculator-style: digits only, last 2 are cents
+  let rawDigits = "";
 
   function formatRaw(digits) {
     if (!digits) return "";
@@ -128,27 +97,6 @@
     const cents = padded.slice(-2);
     const dollars = padded.slice(0, -2).replace(/^0+/, "") || "0";
     return `${dollars}.${cents}`;
-  }
-
-  function handleDigit(d) {
-    if (rawDigits.length >= 7) return; // max $99999.99
-    rawDigits += d;
-    updateAmountDisplay();
-  }
-
-  function handleBackspace() {
-    rawDigits = rawDigits.slice(0, -1);
-    updateAmountDisplay();
-  }
-
-  function updateAmountDisplay() {
-    const el = document.getElementById("amount-input");
-    if (el) el.value = formatRaw(rawDigits);
-  }
-
-  function clearRaw() {
-    rawDigits = "";
-    updateAmountDisplay();
   }
 
   function getTotals() {
@@ -161,7 +109,7 @@
   function addEntry() {
     const noteEl = document.getElementById("note-input");
     const val = parseFloat(formatRaw(rawDigits));
-    if (!val || val <= 0) return;
+    if (!val || val <= 0) { document.getElementById("amount-input").focus(); return; }
     entries.unshift({
       id: Date.now(),
       category: activeTab,
@@ -170,9 +118,10 @@
       date: new Date().toISOString(),
     });
     saveEntries(entries);
-    clearRaw();
+    rawDigits = "";
     noteEl.value = "";
     render();
+    document.getElementById("amount-input").focus();
   }
 
   function removeEntry(id) {
@@ -181,10 +130,36 @@
     render();
   }
 
-  function setTab(tab) {
-    activeTab = tab;
-    showAll = false;
-    render();
+  function setTab(tab) { activeTab = tab; showAll = false; render(); }
+  function toggleShowAll() { showAll = !showAll; render(); }
+
+  function bindAmountInput() {
+    const el = document.getElementById("amount-input");
+    if (!el) return;
+    el.value = formatRaw(rawDigits);
+
+    el.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") { e.preventDefault(); addEntry(); return; }
+      if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        rawDigits = rawDigits.slice(0, -1);
+        el.value = formatRaw(rawDigits);
+        return;
+      }
+      if (["Tab","ArrowLeft","ArrowRight"].includes(e.key)) return;
+      if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
+      if (rawDigits.length >= 7) { e.preventDefault(); return; }
+      e.preventDefault();
+      rawDigits += e.key;
+      el.value = formatRaw(rawDigits);
+    });
+
+    // Mobile: intercept the input event after iOS keyboard fires
+    el.addEventListener("input", function() {
+      const digits = el.value.replace(/\D/g, "").slice(-7);
+      rawDigits = digits;
+      el.value = formatRaw(rawDigits);
+    });
   }
 
   function render() {
@@ -197,35 +172,31 @@
     const activeEntries = entries.filter(e => e.category === activeTab);
     const displayEntries = showAll ? activeEntries : activeEntries.slice(0, 5);
 
-    // Mini bars HTML
     const miniBars = KEYS.map(key => {
       const bk = BUDGETS[key];
       const spent = totals[key] || 0;
       const pct = Math.min((spent / bk.limit) * 100, 100);
       const over = spent > bk.limit;
       const isActive = key === activeTab;
-      return `
-        <div class="mini-item" onclick="setTab('${key}')">
-          <div class="mini-label-row">
-            <span style="color:${isActive ? bk.color : '#666'}">${bk.label.toUpperCase()}</span>
-            <span style="color:${over ? '#ff6b6b' : '#888'}">$${spent.toFixed(0)}/$${bk.limit}</span>
-          </div>
-          <div class="mini-track">
-            <div class="mini-fill" style="width:${pct}%;background:${over ? '#ff6b6b' : bk.color};opacity:${isActive ? 1 : 0.5}"></div>
-          </div>
-        </div>`;
+      return `<div class="mini-item" onclick="setTab('${key}')">
+        <div class="mini-label-row">
+          <span style="color:${isActive ? bk.color : '#666'}">${bk.label.toUpperCase()}</span>
+          <span style="color:${over ? '#ff6b6b' : '#888'}">$${spent.toFixed(0)}/$${bk.limit}</span>
+        </div>
+        <div class="mini-track">
+          <div class="mini-fill" style="width:${pct}%;background:${over ? '#ff6b6b' : bk.color};opacity:${isActive ? 1 : 0.5}"></div>
+        </div>
+      </div>`;
     }).join("");
 
-    // Tabs HTML
     const tabs = KEYS.map(key => {
       const bk = BUDGETS[key];
       const isActive = key === activeTab;
-      return `<button class="tab-btn ${isActive ? 'active' : ''}" 
+      return `<button class="tab-btn ${isActive ? 'active' : ''}"
         style="${isActive ? `background:${bk.color};border-color:${bk.color}` : ''}"
         onclick="setTab('${key}')">${bk.emoji}</button>`;
     }).join("");
 
-    // Entries HTML
     let entriesHTML = "";
     if (activeEntries.length === 0) {
       entriesHTML = `<div class="empty">NO ENTRIES YET</div>`;
@@ -241,7 +212,6 @@
             <button class="del-btn" onclick="removeEntry(${entry.id})">×</button>
           </div>
         </div>`).join("");
-
       if (activeEntries.length > 5) {
         entriesHTML += `<button class="show-more" onclick="toggleShowAll()">
           ${showAll ? '↑ show less' : `+ ${activeEntries.length - 5} more`}
@@ -254,7 +224,6 @@
     document.getElementById("app").innerHTML = `
       <div class="month-label">${getMonthName()}</div>
       <div class="title">SPENDING LOG</div>
-
       <div class="master-bar-row">
         <span>TOTAL SPENT</span>
         <span style="color:${isOver ? '#ff6b6b' : '#f0ebe0'}">
@@ -264,51 +233,31 @@
       <div class="bar-track">
         <div class="bar-fill" style="width:${totalPct}%;background:${isOver ? '#ff6b6b' : 'linear-gradient(90deg,#e8c547,#e87d47)'}"></div>
       </div>
-
       <div class="mini-grid">${miniBars}</div>
       <div class="tabs">${tabs}</div>
-
       <div class="cat-header">
         <div class="cat-name" style="color:${b.color}">${b.label.toUpperCase()}</div>
         <div class="cat-remaining" style="color:${remaining < 0 ? '#ff6b6b' : '#555'}">
           ${remaining < 0 ? '-$' + Math.abs(remaining).toFixed(2) + ' over' : '$' + remaining.toFixed(2) + ' left'}
         </div>
       </div>
-
       <div class="input-row">
         <div class="amount-wrap">
           <span class="dollar">$</span>
-          <input id="amount-input" class="amount-input" type="text" inputmode="none" readonly placeholder="0.00" />
+          <input id="amount-input" class="amount-input" type="text" inputmode="numeric" placeholder="0.00" autocomplete="off" />
         </div>
-        <input id="note-input" class="note-input" type="text" placeholder="what was it?" />
+        <input id="note-input" class="note-input" type="text" placeholder="what was it?" autocomplete="off" />
         <button class="add-btn" style="background:${b.color}" onclick="addEntry()">+</button>
       </div>
-
-      <div class="numpad">
-        ${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(k => `
-          <button class="num-btn ${k === '✓' ? 'num-confirm' : k === '⌫' ? 'num-back' : ''}"
-            style="${k === '✓' ? `background:${b.color};color:#0f0f0f` : ''}"
-            onclick="${k === '⌫' ? 'handleBackspace()' : k === '✓' ? 'addEntry()' : `handleDigit('${k}')`}">
-            ${k}
-          </button>`).join("")}
-      </div>
-
       <div id="entries">${entriesHTML}</div>
     `;
 
-    // bind enter on note field
+    bindAmountInput();
     document.getElementById("note-input").addEventListener("keydown", e => { if (e.key === "Enter") addEntry(); });
-    updateAmountDisplay();
-  }
-
-  function toggleShowAll() {
-    showAll = !showAll;
-    render();
   }
 
   render();
 
-  // Register service worker for offline use
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
