@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Spend Log" />
@@ -52,8 +52,8 @@
     .input-row { display: flex; gap: 8px; margin-bottom: 24px; }
     .amount-wrap { display: flex; align-items: center; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 0 14px; width: 110px; }
     .dollar { color: #555; font-size: 13px; margin-right: 4px; }
-    .amount-input { background: transparent; border: none; color: #f0ebe0; font-size: 14px; font-family: 'DM Mono', monospace; width: 100%; outline: none; padding: 14px 0; }
-    .note-input { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px; color: #f0ebe0; font-size: 13px; font-family: 'DM Mono', monospace; outline: none; }
+    .amount-input { background: transparent; border: none; color: #f0ebe0; font-size: 16px; font-family: 'DM Mono', monospace; width: 100%; outline: none; padding: 14px 0; }
+    .note-input { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px; color: #f0ebe0; font-size: 16px; font-family: 'DM Mono', monospace; outline: none; }
     .add-btn { border-radius: 8px; padding: 0 18px; font-size: 22px; font-weight: 700; color: #0f0f0f; border: none; cursor: pointer; transition: transform 0.15s ease; }
     .add-btn:hover { transform: scale(1.04); }
     .add-btn:active { transform: scale(0.96); }
@@ -70,7 +70,11 @@
     .show-more { background: transparent; border: none; color: #555; font-size: 11px; letter-spacing: 2px; padding: 16px 0; width: 100%; text-align: center; text-transform: uppercase; cursor: pointer; }
     .show-more:hover { color: #888; }
 
-    @keyframes slideIn {
+    .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+    .num-btn { background: #1a1a1a; border: 1px solid #222; border-radius: 8px; color: #f0ebe0; font-size: 18px; font-family: 'DM Mono', monospace; padding: 14px; cursor: pointer; transition: all 0.1s; }
+    .num-btn:active { transform: scale(0.94); background: #2a2a2a; }
+    .num-back { color: #888; }
+    .num-confirm { font-size: 16px; }
       from { opacity: 0; transform: translateY(-6px); }
       to { opacity: 1; transform: translateY(0); }
     }
@@ -116,6 +120,36 @@
   let entries = loadEntries();
   let activeTab = "eating";
   let showAll = false;
+  let rawDigits = ""; // calculator-style: digits only, last 2 are cents
+
+  function formatRaw(digits) {
+    if (!digits) return "";
+    const padded = digits.padStart(3, "0");
+    const cents = padded.slice(-2);
+    const dollars = padded.slice(0, -2).replace(/^0+/, "") || "0";
+    return `${dollars}.${cents}`;
+  }
+
+  function handleDigit(d) {
+    if (rawDigits.length >= 7) return; // max $99999.99
+    rawDigits += d;
+    updateAmountDisplay();
+  }
+
+  function handleBackspace() {
+    rawDigits = rawDigits.slice(0, -1);
+    updateAmountDisplay();
+  }
+
+  function updateAmountDisplay() {
+    const el = document.getElementById("amount-input");
+    if (el) el.value = formatRaw(rawDigits);
+  }
+
+  function clearRaw() {
+    rawDigits = "";
+    updateAmountDisplay();
+  }
 
   function getTotals() {
     const t = {};
@@ -125,10 +159,9 @@
   }
 
   function addEntry() {
-    const amountEl = document.getElementById("amount-input");
     const noteEl = document.getElementById("note-input");
-    const val = parseFloat(amountEl.value);
-    if (!val || val <= 0) { amountEl.focus(); return; }
+    const val = parseFloat(formatRaw(rawDigits));
+    if (!val || val <= 0) return;
     entries.unshift({
       id: Date.now(),
       category: activeTab,
@@ -137,9 +170,8 @@
       date: new Date().toISOString(),
     });
     saveEntries(entries);
-    amountEl.value = "";
+    clearRaw();
     noteEl.value = "";
-    amountEl.focus();
     render();
   }
 
@@ -246,18 +278,27 @@
       <div class="input-row">
         <div class="amount-wrap">
           <span class="dollar">$</span>
-          <input id="amount-input" class="amount-input" type="number" inputmode="decimal" placeholder="0.00" />
+          <input id="amount-input" class="amount-input" type="text" inputmode="none" readonly placeholder="0.00" />
         </div>
         <input id="note-input" class="note-input" type="text" placeholder="what was it?" />
         <button class="add-btn" style="background:${b.color}" onclick="addEntry()">+</button>
       </div>
 
+      <div class="numpad">
+        ${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(k => `
+          <button class="num-btn ${k === '✓' ? 'num-confirm' : k === '⌫' ? 'num-back' : ''}"
+            style="${k === '✓' ? `background:${b.color};color:#0f0f0f` : ''}"
+            onclick="${k === '⌫' ? 'handleBackspace()' : k === '✓' ? 'addEntry()' : `handleDigit('${k}')`}">
+            ${k}
+          </button>`).join("")}
+      </div>
+
       <div id="entries">${entriesHTML}</div>
     `;
 
-    // Re-bind enter key
-    document.getElementById("amount-input").addEventListener("keydown", e => { if (e.key === "Enter") addEntry(); });
+    // bind enter on note field
     document.getElementById("note-input").addEventListener("keydown", e => { if (e.key === "Enter") addEntry(); });
+    updateAmountDisplay();
   }
 
   function toggleShowAll() {
